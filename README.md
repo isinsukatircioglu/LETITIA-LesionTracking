@@ -1,4 +1,4 @@
-# LesionLocator: Zero-Shot Universal Tumor Segmentation and Tracking in 3D Whole-Body Imaging
+# [CVPR2025] LesionLocator: Zero-Shot Universal Tumor Segmentation and Tracking in 3D Whole-Body Imaging
 
 This repository will contain the official implementation of our paper:
 
@@ -19,6 +19,7 @@ If you find our work useful, please consider citing:
 @article{lesionlocator2025,
   title={LesionLocator: Zero-Shot Universal Tumor Segmentation and Tracking in 3D Whole-Body Imaging},
   author={Maximilian Rokuss and Yannick Kirchhoff and Seval Akbal and Balint Kovacs and Saikat Roy and Constantin Ulrich and Tassilo Wald and Lukas T. Rotkopf and Heinz-Peter Schlemmer and Klaus Maier-Hein},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
   year={2025}
 }
 ```
