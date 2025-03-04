@@ -16,11 +16,12 @@ The code for **LesionLocator** will be released soon. Stay tuned!
 ## Citation
 If you find our work useful, please consider citing:
 ```bibtex
-@article{lesionlocator2025,
-  title={LesionLocator: Zero-Shot Universal Tumor Segmentation and Tracking in 3D Whole-Body Imaging},
-  author={Maximilian Rokuss and Yannick Kirchhoff and Seval Akbal and Balint Kovacs and Saikat Roy and Constantin Ulrich and Tassilo Wald and Lukas T. Rotkopf and Heinz-Peter Schlemmer and Klaus Maier-Hein},
-  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
-  year={2025}
+@article{rokuss2025lesionlocator,
+      title={LesionLocator: Zero-Shot Universal Tumor Segmentation and Tracking in 3D Whole-Body Imaging}, 
+      author={Maximilian Rokuss and Yannick Kirchhoff and Seval Akbal and Balint Kovacs and Saikat Roy and Constantin Ulrich and Tassilo Wald and Lukas T. Rotkopf and Heinz-Peter Schlemmer and Klaus Maier-Hein},
+      year={2025},
+      eprint={2502.20985},
+      url={https://arxiv.org/abs/2502.20985}, 
 }
 ```
 
