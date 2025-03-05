@@ -8,7 +8,8 @@ This repository will contain the official implementation of our paper:
 Our paper introduces **LesionLocator**, a novel framework for universal tumor segmentation and tracking in 3D whole-body imaging. Leveraging a large-scale lesion dataset and combining promptable segmentation and deep-learning based registration, our method achieves state-of-the-art performance across both tasks.
 
 > **Authors**: Maximilian Rokuss, Yannick Kirchhoff, Seval Akbal, Balint Kovacs, Saikat Roy, Constantin Ulrich, Tassilo Wald, Lukas T. Rotkopf, Heinz-Peter Schlemmer and Klaus Maier-Hein  
-> **Preprint**: Coming soon
+> **Preprint**: [![arXiv](https://img.shields.io/badge/arXiv-2502.20985-b31b1b.svg)](https://arxiv.org/abs/2502.20985)
+
 
 ## Code Release
 The code for **LesionLocator** will be released soon. Stay tuned!
