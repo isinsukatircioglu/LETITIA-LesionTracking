@@ -11,8 +11,12 @@ Our paper introduces **LesionLocator**, a novel framework for universal tumor se
 > **Preprint**: [![arXiv](https://img.shields.io/badge/arXiv-2502.20985-b31b1b.svg)](https://arxiv.org/abs/2502.20985)
 
 
-## Code Release
-The code for **LesionLocator** will be released soon. Stay tuned!
+## Code & Data Release
+The code for **LesionLocator** as well as the synthetic longitudinal dataset will be released soon. Stay tuned!
+
+We also highly recommend trying out [**nnInteractive**](https://arxiv.org/abs/2503.08373) our recent model for 3D interactive segmentation across all modalities, all target structures using various types of prompts!
+
+Check out the [python backend](https://github.com/MIC-DKFZ/nnInteractive) or the [napari plugin](https://github.com/MIC-DKFZ/napari-nninteractive).
 
 ## Citation
 If you find our work useful, please consider citing:
