@@ -12,11 +12,13 @@ Our paper introduces **LesionLocator**, a novel framework for universal tumor se
 
 
 ## Code & Data Release
-The code for **LesionLocator** as well as the synthetic longitudinal dataset will be released soon. Stay tuned!
+We've been releasing a lot of code in the past month so I'm sorry for the slight delay here! However, the code for **LesionLocator** will be released very soon. Stay tuned!
 
-We also highly recommend trying out [**nnInteractive**](https://arxiv.org/abs/2503.08373) our recent model for 3D interactive segmentation across all modalities, all target structures using various types of prompts!
+In the mean time, if you are interested check out [**nnInteractive**](https://github.com/MIC-DKFZ/nnInteractive) or [**LongiSeg**](https://github.com/MIC-DKFZ/LongiSeg) which we both just released:
 
-Check out the [python backend](https://github.com/MIC-DKFZ/nnInteractive) or the [napari plugin](https://github.com/MIC-DKFZ/napari-nninteractive).
+- [**nnInteractive**](https://github.com/MIC-DKFZ/nnInteractive) is our recent model for 3D interactive segmentation across all modalities, all target structures using various types of prompts! Check out the [python backend](https://github.com/MIC-DKFZ/nnInteractive) or the [napari plugin](https://github.com/MIC-DKFZ/napari-nninteractive). &nbsp; &nbsp; [![arXiv](https://img.shields.io/badge/arXiv-2503.08373-b31b1b.svg)](https://arxiv.org/abs/2503.08373)
+
+- [**LongiSeg**](https://github.com/MIC-DKFZ/LongiSeg) is an extension of the popular [nnU-Net framework](https://github.com/MIC-DKFZ/nnUNet), designed specifically for **longitudinal medical image segmentation**. By incorporating temporal information across multiple timepoints, LongiSeg enhances segmentation accuracy and consistency, making it a robust tool for analyzing medical imaging over time. LongiSeg includes several methods for temporal feature merging, including the newly introduced [Difference Weighting Block](https://github.com/MIC-DKFZ/Longitudinal-Difference-Weighting). &nbsp; &nbsp;   [![arXiv](https://img.shields.io/badge/arXiv-2404.03010-B31B1B.svg)](https://arxiv.org/abs/2409.13416)
 
 ## Citation
 If you find our work useful, please consider citing:
