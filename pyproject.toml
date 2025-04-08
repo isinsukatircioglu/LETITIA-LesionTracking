@@ -1,0 +1,73 @@
+[project]
+name = "lesionlocator"
+version = "1.0.0"
+requires-python = ">=3.10"
+description = "LesionLocator is a framework for unified segmentation and tracking of lesions."
+readme = "readme.md"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Maximilian Rokuss", email = "maximilian.rokuss@dkfz-heidelberg.de"},
+    { name = "German Cancer Research Center" }
+]
+keywords = [
+    'deep learning',
+    'image segmentation',
+    'semantic segmentation',
+    'medical image analysis',
+    'tumor lesion',
+    'tracking',
+    'registration'
+]
+dependencies = [
+    "torch>=2.1.2",
+    "acvl-utils>=0.2.3,<0.3",  # 0.3 may bring breaking changes. Careful!
+    "dynamic-network-architectures>=0.3.1,<0.4",  # 0.3.1 and lower are supported, 0.4 may have breaking changes. Let's be careful here
+    "unigradicon>=1.0.3",
+    "tqdm",
+    "dicom2nifti",
+    "scipy",
+    "batchgenerators>=0.25.1",
+    "numpy>=1.24",
+    "scikit-learn",
+    "scikit-image>=0.19.3",
+    "SimpleITK>=2.2.1",
+    "pandas",
+    "graphviz",
+    'tifffile',
+    'requests',
+    "nibabel",
+    "matplotlib",
+    "seaborn",
+    "imagecodecs",
+    "yacs",
+    "batchgeneratorsv2>=0.2",
+    "einops",
+    "natsort",
+    "blosc2>=3.0.0b1"
+]
+
+[project.urls]
+homepage = "https://github.com/MIC-DKFZ/LesionLocator"
+repository = "https://github.com/MIC-DKFZ/LesionLocator"
+
+[project.scripts]
+LesionLocator_segment = "lesionlocator.inference.lesionlocator_segment:predict_seg_from_prompt"
+LesionLocator_track = "lesionlocator.inference.lesionlocator_segment_and_track:segment_and_track"
+LesionLocator_create_prompt_json = "lesionlocator.utilities.prompt_handling.create_prompt_jsons_from_seg:prompt_jsons"
+
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "ruff",
+    "pre-commit"
+]
+
+[build-system]
+requires = ["setuptools>=67.8.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.codespell]
+skip = '.git,*.pdf,*.svg'
+#
+# ignore-words-list = ''
