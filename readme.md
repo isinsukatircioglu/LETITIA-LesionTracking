@@ -203,11 +203,13 @@ If you are interested check out [**nnInteractive**](https://github.com/MIC-DKFZ/
 If you find our work useful, please consider citing:
 
 ```bibtex
-@inproceedings{rokuss2025lesionlocator,
-      title={LesionLocator: Zero-Shot Universal Tumor Segmentation and Tracking in 3D Whole-Body Imaging}, 
-      author={Maximilian Rokuss and Yannick Kirchhoff and Seval Akbal and Balint Kovacs and Saikat Roy and Constantin Ulrich and Tassilo Wald and Lukas T. Rotkopf and Heinz-Peter Schlemmer and Klaus Maier-Hein},
-      booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
-      year={2025}
+@InProceedings{Rokuss_2025_CVPR,
+    author    = {Rokuss, Maximilian and Kirchhoff, Yannick and Akbal, Seval and Kovacs, Balint and Roy, Saikat and Ulrich, Constantin and Wald, Tassilo and Rotkopf, Lukas T. and Schlemmer, Heinz-Peter and Maier-Hein, Klaus},
+    title     = {LesionLocator: Zero-Shot Universal Tumor Segmentation and Tracking in 3D Whole-Body Imaging},
+    booktitle = {Proceedings of the Computer Vision and Pattern Recognition Conference (CVPR)},
+    month     = {June},
+    year      = {2025},
+    pages     = {30872-30885}
 }
 ```
 
