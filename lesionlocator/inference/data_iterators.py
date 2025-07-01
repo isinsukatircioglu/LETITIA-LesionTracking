@@ -9,7 +9,7 @@ import torch
 from lesionlocator.utilities.plans_handling.plans_handler import PlansManager, ConfigurationManager
 from lesionlocator.utilities.prompt_handling.prompt_handler import get_prompt_from_inst_or_bin_seg, get_prompt_from_json
 
-
+import numpy as np
 
 def preprocess_fromfiles_save_to_queue(input_files: List[str],
                                        prompt_files: List[str],
@@ -21,29 +21,33 @@ def preprocess_fromfiles_save_to_queue(input_files: List[str],
                                        target_queue: Queue,
                                        done_event: Event,
                                        abort_event: Event,
-                                       verbose: bool = False):
+                                       verbose: bool = False,
+                                       track: bool = False):
     try:
         preprocessor = configuration_manager.preprocessor_class(verbose=verbose)
         for idx in range(len(input_files)):
             if prompt_files[idx].endswith('.json'):
-                data, _, data_properties = preprocessor.run_case([input_files[idx]],
-                                                                None,
-                                                                plans_manager,
-                                                                configuration_manager,
-                                                                dataset_json)
+                seg = None
+                data, _, data_properties, bl_data, bl_data_properties  = preprocessor.run_case([input_files[idx]],
+                                                                                                None,
+                                                                                                plans_manager,
+                                                                                                configuration_manager,
+                                                                                                dataset_json,
+                                                                                                track)
+                
                 
                 prompt = get_prompt_from_json(prompt_files[idx], prompt_type, data_properties, data.shape[1:])
             else:
-                data, prompt, data_properties = preprocessor.run_case([input_files[idx]],
-                                                                prompt_files[idx],
-                                                                plans_manager,
-                                                                configuration_manager,
-                                                                dataset_json)
-                prompt = get_prompt_from_inst_or_bin_seg(prompt, prompt_type)
- 
+              
+                data, seg, data_properties, bl_data, bl_data_properties = preprocessor.run_case([input_files[idx]],
+                                                                    prompt_files[idx],
+                                                                    plans_manager,
+                                                                    configuration_manager,
+                                                                    dataset_json,
+                                                                    track)
+                prompt = get_prompt_from_inst_or_bin_seg(seg, prompt_type)
             data = torch.from_numpy(data).to(dtype=torch.float32, memory_format=torch.contiguous_format)
-
-            item = {'data': data, 'prompt': prompt, 'data_properties': data_properties, 'ofile': output_files[idx]}
+            item = {'data': data, 'prompt': prompt, 'seg':seg, 'data_properties': data_properties, 'ofile': output_files[idx], 'bl_data': bl_data, 'bl_data_properties': bl_data_properties}
             success = False
             while not success:
                 try:
@@ -69,7 +73,8 @@ def preprocessing_iterator_fromfiles(input_files: List[str],
                                      configuration_manager: ConfigurationManager,
                                      num_processes: int,
                                      pin_memory: bool = False,
-                                     verbose: bool = False):
+                                     verbose: bool = False,
+                                     track: bool = False):
     context = multiprocessing.get_context('spawn')
     manager = Manager()
     num_processes = min(len(input_files), num_processes)
@@ -93,7 +98,8 @@ def preprocessing_iterator_fromfiles(input_files: List[str],
                          queue,
                          event,
                          abort_event,
-                         verbose
+                         verbose,
+                         track
                      ), daemon=True)
         pr.start()
         target_queues.append(queue)
