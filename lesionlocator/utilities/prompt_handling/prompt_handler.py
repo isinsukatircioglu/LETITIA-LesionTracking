@@ -63,6 +63,7 @@ def get_centroids_from_inst_or_bin_seg(seg):
             stats = cc3d.statistics(seg_instances, no_slice_conversion=True)
             for centroid in stats["centroids"][1:]:
                 centroids.append([centroid[0], centroid[1], centroid[2]])
+            return centroids[:len(uniques)]  # Return only the centroids for the unique instances
         else:
             seg[seg < 0] = 0
             stats = cc3d.statistics(seg[0].astype(np.uint8), no_slice_conversion=True)
@@ -71,7 +72,7 @@ def get_centroids_from_inst_or_bin_seg(seg):
                     centroids.append([])
                     continue
                 centroids.append([centroid[0], centroid[1], centroid[2]])
-        return centroids
+            return centroids
     else:
         return []
 
