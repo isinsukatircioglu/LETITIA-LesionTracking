@@ -1,11 +1,8 @@
-# [CVPR2025] LesionLocator: Zero-Shot Universal Tumor Segmentation and Tracking in 3D Whole-Body Imaging
+## **LETITIA: Learning Tumor Dynamics and Early Markers of Immunotherapy Response from PET/CT Imaging** 
 
-<img src="documentation/assets/LesionLocatorLogo.png" />
+This repository builds upon and adapts the code from:
 
-This repository is based on the official implementation of:
-
-### **LesionLocator: Zero-Shot Universal Tumor Segmentation and Tracking in 3D Whole-Body Imaging**
-
+ **LesionLocator: Zero-Shot Universal Tumor Segmentation and Tracking in 3D Whole-Body Imaging**
 
 The paper introduces a novel framework for **zero-shot lesion segmentation** and **longitudinal tumor tracking** in 3D full-body imaging. By combining a large-scale lesion dataset, promptable segmentation, and deep-learning-based image registration, our framework achieves state-of-the-art results for both tasks.
 
@@ -149,50 +146,6 @@ Once downloaded, extract the contents and use the `-m` argument in the CLI tools
 
 ---
 
-
-## 🗃️ Lesion Dataset with Synthetic Follow-Ups
-
-We have released the **Lesion Dataset with Synthetic Follow-Ups** [here](https://doi.dkfz.de/10.6097/DKFZ/IR/E230/20250324_1.zip) (ca. 700 GB), which includes simulated follow-up scans with consistent instance labels. Due to image size, quality, or licensing constraints, not all images were used to synthesize a second timepoint and were excluded from this dataset. We reccomend downloading e.g. with `wget` since our servers can sometimes be a bit unstable.
-
-```bash
-wget -c --no-check-certificate -O LesionLocator_SynteticLongitudinalDataset.zip https://doi.dkfz.de/10.6097/DKFZ/IR/E230/20250324_1.zip
-```
-
-#### **⚠ Important Notes**  
-- **Instance-based labels (not semantic):** Lesions in a single patient scan are labeled consecutively, and the same lesion retains the same label across both timepoints.
-- **Synthetic deformations & segmentation masks:** Some images contain **unrealistic deformations** or **challenging segmentation masks**, which may serve as useful test cases for **improving automated analysis methods**.  
-- **Recommended use:** This dataset is **ideal for pretraining** or for use **alongside real longitudinal data** to enhance model robustness and generalization.
-- **Longitudinal tracking tip:** When using this dataset for **longitudinal tracking**, we highly recommend **cropping one image during data augmentation** to **increase (translational) misalignment** and better simulate real-world conditions. 
-
-#### **Included Datasets**  
-This dataset incorporates lesion data from various publicly available sources:  
-
-- **[COVID-19 CT Lung](https://zenodo.org/records/3757476)**  
-- **[KiTS](https://kits-challenge.org/kits23/)**  
-- **[LIDC](https://www.cancerimagingarchive.net/collection/lidc-idri/)**  
-- **[LNDb](https://lndb.grand-challenge.org/)**  
-- **[MSD Colon](http://medicaldecathlon.com/)**  
-- **[MSD Hepatic Vessels](http://medicaldecathlon.com/)**  
-- **[MSD Liver](http://medicaldecathlon.com/)**  
-- **[MSD Lung](http://medicaldecathlon.com/)**  
-- **[MSD Pancreas](http://medicaldecathlon.com/)**  
-- **[NIH Lymph](https://www.cancerimagingarchive.net/collection/ct-lymph-nodes/)**  
-- **[NSCLC Radiomics](https://www.cancerimagingarchive.net/collection/nsclc-radiomics/)**  
-
-#### 📜 This dataset is released under the **CC BY-NC-SA 4.0** license. 
-
----
-
-## More Related Code Releases
-
-If you are interested check out [**nnInteractive**](https://github.com/MIC-DKFZ/nnInteractive) or [**LongiSeg**](https://github.com/MIC-DKFZ/LongiSeg) which we both just released:
-
-- [**nnInteractive**](https://github.com/MIC-DKFZ/nnInteractive) is our recent model for 3D interactive segmentation across all modalities, all target structures using various types of prompts! Check out the [python backend](https://github.com/MIC-DKFZ/nnInteractive) or the [napari plugin](https://github.com/MIC-DKFZ/napari-nninteractive). &nbsp; &nbsp; [![arXiv](https://img.shields.io/badge/arXiv-2503.08373-b31b1b.svg)](https://arxiv.org/abs/2503.08373)
-
-- [**LongiSeg**](https://github.com/MIC-DKFZ/LongiSeg) is an extension of the popular [nnU-Net framework](https://github.com/MIC-DKFZ/nnUNet), designed specifically for **longitudinal medical image segmentation**. By incorporating temporal information across multiple timepoints, LongiSeg enhances segmentation accuracy and consistency, making it a robust tool for analyzing medical imaging over time. LongiSeg includes several methods for temporal feature merging, including the newly introduced [Difference Weighting Block](https://github.com/MIC-DKFZ/Longitudinal-Difference-Weighting). &nbsp; &nbsp;   [![arXiv](https://img.shields.io/badge/arXiv-2404.03010-B31B1B.svg)](https://arxiv.org/abs/2409.13416)
-
----
-
 ## 📚 Citation
 
 If you find our work useful, please consider citing:
@@ -207,11 +160,3 @@ If you find our work useful, please consider citing:
     pages     = {30872-30885}
 }
 ```
-
----
-
-## 📬 Contact
-
-For questions, issues, or collaborations, please contact:
-
-📧 maximilian.rokuss@dkfz-heidelberg.de
