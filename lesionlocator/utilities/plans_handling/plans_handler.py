@@ -30,7 +30,6 @@ if TYPE_CHECKING:
 class ConfigurationManager(object):
     def __init__(self, configuration_dict: dict):
         self.configuration = configuration_dict
-
         # backwards compatibility
         if 'architecture' not in self.configuration.keys():
             warnings.warn("Detected old nnU-Net plans format. Attempting to reconstruct network architecture "
@@ -97,6 +96,9 @@ class ConfigurationManager(object):
 
     def __repr__(self):
         return self.configuration.__repr__()
+
+    def set_spacing(self, spacing: List[float]):
+        self.configuration['spacing'] = spacing
 
     @property
     def data_identifier(self) -> str:
@@ -228,7 +230,8 @@ class PlansManager(object):
         return self.plans.__repr__()
 
     def _internal_resolve_configuration_inheritance(self, configuration_name: str,
-                                                    visited: Tuple[str, ...] = None) -> dict:
+                                                    visited: Tuple[str, ...] = None,
+                                                    modality: str = 'ct') -> dict:
         if configuration_name not in self.plans['configurations'].keys():
             raise ValueError(f'The configuration {configuration_name} does not exist in the plans I have. Valid '
                              f'configuration names are {list(self.plans["configurations"].keys())}.')
@@ -246,18 +249,21 @@ class PlansManager(object):
                                        f"is {parent_config_name}.")
                 visited = (*visited, configuration_name)
 
-            base_config = self._internal_resolve_configuration_inheritance(parent_config_name, visited)
+            base_config = self._internal_resolve_configuration_inheritance(parent_config_name, visited, modality)
             base_config.update(configuration)
             configuration = base_config
+            if modality == 'pet':
+                configuration['normalization_schemes'] = ['ZScoreNormalization']
+            configuration['spacing'] = [1.5, 1.5, 1.5] 
         return configuration
 
     @lru_cache(maxsize=10)
-    def get_configuration(self, configuration_name: str):
+    def get_configuration(self, configuration_name: str, modality: str = 'ct'):
         if configuration_name not in self.plans['configurations'].keys():
             raise RuntimeError(f"Requested configuration {configuration_name} not found in plans. "
                                f"Available configurations: {list(self.plans['configurations'].keys())}")
 
-        configuration_dict = self._internal_resolve_configuration_inheritance(configuration_name)
+        configuration_dict = self._internal_resolve_configuration_inheritance(configuration_name, modality=modality)
         return ConfigurationManager(configuration_dict)
 
     @property
