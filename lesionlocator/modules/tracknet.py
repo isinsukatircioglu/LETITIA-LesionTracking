@@ -36,6 +36,7 @@ class TrackNet(nn.Module):
         """
 
         # If z dimension of images is very different, slide the smaller image to best crop the larger one
+        
         x0_z, x1_z = x0.size(2), x1.size(2)
         x0_window, x1_window = [0, x0_z], [0, x1_z]
         if abs(x0_z - x1_z) > difference_threshold:
@@ -232,10 +233,9 @@ class TrackNet(nn.Module):
             slc[1] = slc[1] + x1_window[0]
             logits_out[:, :, slc[0]:slc[1], slc[2]:slc[3], slc[4]:slc[5]] = output[:, :]
 
-            return logits_out
+            return logits_out, reg_loss  # Now returning registration loss during inference too
         else:
             # x1_mask is only needed to be passed to the method during training
             x1_mask = torch.stack([x1_mask[b, :, slicer[0]:slicer[1], slicer[2]:slicer[3], slicer[4]:slicer[5]] for b, slicer in enumerate(slicers)])
 
             return output, reg_loss, x1_mask # for training
-        
