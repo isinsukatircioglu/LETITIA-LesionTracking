@@ -16,7 +16,7 @@ import multiprocessing
 import shutil
 from time import sleep
 from typing import Tuple
-
+import os
 import SimpleITK
 import numpy as np
 import pandas as pd
@@ -61,12 +61,10 @@ class DefaultPreprocessor(object):
         # this command will generate a segmentation. This is important because of the nonzero mask which we may need
         data, seg, bbox = crop_to_nonzero(data, seg)
         properties['bbox_used_for_cropping'] = bbox
-        # print(data.shape, seg.shape)
         properties['shape_after_cropping_and_before_resampling'] = data.shape[1:]
 
         # resample
         target_spacing = configuration_manager.spacing  # this should already be transposed
-
         if len(target_spacing) < len(data.shape[1:]):
             # target spacing for 2d has 2 entries but the data and original_spacing have three because everything is 3d
             # in 2d configuration we do not change the spacing between slices
@@ -78,7 +76,6 @@ class DefaultPreprocessor(object):
         # longer fitting the images perfectly!
         data = self._normalize(data, seg, configuration_manager,
                                plans_manager.foreground_intensity_properties_per_channel)
-
         # print('current shape', data.shape[1:], 'current_spacing', original_spacing,
         #       '\ntarget shape', new_shape, 'target_spacing', target_spacing)
         old_shape = data.shape[1:]
@@ -113,9 +110,13 @@ class DefaultPreprocessor(object):
             seg = seg.astype(np.int8)
         return data, seg, properties
 
+    def all_exist(self, files):
+            return all(os.path.exists(f) for f in files)
+
     def run_case(self, image_files: List[str], seg_file: Union[str, None], plans_manager: PlansManager,
                  configuration_manager: ConfigurationManager,
-                 dataset_json: Union[dict, str]):
+                 dataset_json: Union[dict, str],
+                 track: bool = False):
         """
         seg file can be none (test cases)
 
@@ -130,7 +131,20 @@ class DefaultPreprocessor(object):
 
         # load image(s)
         data, data_properties = rw.read_images(image_files)
-
+        bl_files = None
+        if track:
+            if 'TP1' in image_files[0]:
+                candidate = [imf.replace('TP1', 'TP0') for imf in image_files]
+                if self.all_exist(candidate):
+                    bl_files = candidate
+            elif 'TP2' in image_files[0]:
+                candidate_tp1 = [imf.replace('TP2', 'TP1') for imf in image_files]
+                if self.all_exist(candidate_tp1):
+                    bl_files = candidate_tp1
+                else:
+                    candidate_tp0 = [imf.replace('TP2', 'TP0') for imf in image_files]
+                    if self.all_exist(candidate_tp0):
+                        bl_files = candidate_tp0
         # if possible, load seg
         if seg_file is not None:
             seg, _ = rw.read_seg(seg_file)
@@ -141,7 +155,15 @@ class DefaultPreprocessor(object):
             print(seg_file)
         data, seg, data_properties = self.run_case_npy(data, seg, data_properties, plans_manager, configuration_manager,
                                       dataset_json)
-        return data, seg, data_properties
+        # read the baseline image if tracking is enabled
+        bl_data = None
+        bl_data_properties = None
+        if bl_files:
+            bl_data, bl_data_properties = rw.read_images(bl_files)
+            bl_seg = None
+            bl_data, bl_seg, bl_data_properties = self.run_case_npy(bl_data, bl_seg, bl_data_properties, plans_manager, configuration_manager,
+                                      dataset_json)
+        return data, seg, data_properties, bl_data, bl_data_properties
 
 
     @staticmethod
