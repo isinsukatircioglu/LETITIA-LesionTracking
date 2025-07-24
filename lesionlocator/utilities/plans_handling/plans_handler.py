@@ -253,7 +253,10 @@ class PlansManager(object):
             base_config.update(configuration)
             configuration = base_config
             if modality == 'pet':
-                configuration['normalization_schemes'] = ['ZScoreNormalization']
+                #configuration['normalization_schemes'] = ['ZScoreNormalization']
+                #configuration['normalization_schemes'] = ['CTNormalization']
+                configuration['normalization_schemes'] = ['NoNormalization']
+
             configuration['spacing'] = [1.5, 1.5, 1.5] 
         return configuration
 

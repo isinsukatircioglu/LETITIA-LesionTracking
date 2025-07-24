@@ -8,6 +8,8 @@ from typing import Tuple, Union, List
 
 import numpy as np
 import torch
+import json
+from matplotlib import pyplot as plt
 from acvl_utils.cropping_and_padding.padding import pad_nd_image
 from batchgenerators.dataloading.multi_threaded_augmenter import MultiThreadedAugmenter
 from batchgenerators.utilities.file_and_folder_operations import load_json, join, isfile, maybe_mkdir_p, isdir, subdirs, \
@@ -27,6 +29,7 @@ from lesionlocator.utilities.helpers import empty_cache, dummy_context
 from lesionlocator.utilities.label_handling.label_handling import determine_num_input_channels
 from lesionlocator.utilities.plans_handling.plans_handler import PlansManager
 from lesionlocator.utilities.prompt_handling.prompt_handler import sparse_to_dense_prompt
+from lesionlocator.utilities.surface_distance_based_measures import compute_surface_distances, compute_surface_dice_at_tolerance, compute_dice_coefficient, compute_robust_hausdorff
 
 
 class LesionLocatorSegmenter(object):
@@ -61,6 +64,7 @@ class LesionLocatorSegmenter(object):
 
     def initialize_from_trained_model_folder(self, model_training_output_dir: str,
                                              use_folds: Union[Tuple[Union[int, str]], None],
+                                             modality: str = 'ct',
                                              checkpoint_name: str = 'checkpoint_final.pth'):
         """
         This is used when making predictions with a trained model
@@ -68,7 +72,6 @@ class LesionLocatorSegmenter(object):
         print("Loading segmentation model.")
         if use_folds is None:
             use_folds = LesionLocatorSegmenter.auto_detect_available_folds(model_training_output_dir, checkpoint_name)
-
         dataset_json = load_json(join(model_training_output_dir, 'dataset.json'))
         plans = load_json(join(model_training_output_dir, 'plans.json'))
         plans_manager = PlansManager(plans)
@@ -89,7 +92,7 @@ class LesionLocatorSegmenter(object):
 
             parameters.append(checkpoint['network_weights'])
 
-        configuration_manager = plans_manager.get_configuration(configuration_name)
+        configuration_manager = plans_manager.get_configuration(configuration_name, modality=modality)
         # restore network
         num_input_channels = determine_num_input_channels(plans_manager, configuration_manager, dataset_json)
         trainer_class = recursive_find_python_class(join(lesionlocator.__path__[0], "training", "LesionLocatorTrainer"),
@@ -158,7 +161,7 @@ class LesionLocatorSegmenter(object):
             prompt_files_json = subfiles(prompt_folder_or_file, suffix='.json', join=True, sort=True)
             prompt_files_mask = subfiles(prompt_folder_or_file, suffix=self.dataset_json['file_ending'], join=True, sort=True)
             output_files = [join(output_folder_or_file, os.path.basename(i)) for i in input_files]
-
+            
             # Assertions
             if len(input_files) == 0:
                 print(f'No files found in {source_folder_or_file}')
@@ -190,26 +193,41 @@ class LesionLocatorSegmenter(object):
 
         # Truncate output files
         output_files = [i.replace(self.dataset_json['file_ending'], '') for i in output_files]
-
         data_iterator = preprocessing_iterator_fromfiles(input_files, prompt_files,
                                                 output_files, prompt_type, self.plans_manager, self.dataset_json,
                                                 self.configuration_manager, num_processes_preprocessing, self.device.type == 'cuda',
                                                 self.verbose_preprocessing)
-
-        return self.predict_from_data_iterator(data_iterator, prompt_type, num_processes_segmentation_export)
+       
+        return self.predict_from_data_iterator(data_iterator, prompt_type, output_folder_or_file, num_processes_segmentation_export)
 
 
     def predict_from_data_iterator(self,
                                    data_iterator,
                                    prompt_type: str,
+                                   output_folder_or_file: str,
                                    num_processes_segmentation_export: int = default_num_processes):
         """
         This function takes a data iterator and makes predictions and saves each instance (lesion) as a separate file.
         """
         with multiprocessing.get_context("spawn").Pool(num_processes_segmentation_export) as export_pool:
             worker_list = [i for i in export_pool._pool]
+            print(worker_list)
             r = []
-            for preprocessed in data_iterator:
+            spacing_mm=(1.5, 1.5, 1.5)
+            error_all={'dice': {'mean':0, 'TP0':{'all':[], 'mean':0}, 'TP1': {'all':[], 'mean':0}, 'TP2': {'all':[], 'mean':0}}, 
+               'nsd': {'mean':0, 'TP0':{'all':[], 'mean':0}, 'TP1': {'all':[], 'mean':0}, 'TP2': {'all':[], 'mean':0}},
+               'hausdorff': {'mean':0, 'TP0':{'all':[], 'mean':0}, 'TP1': {'all':[], 'mean':0}, 'TP2': {'all':[], 'mean':0}},
+               'lesion_found':{'all':0, 'mean':0, 'TP0':{'all':0, 'mean':0}, 'TP1':{'all':0, 'mean':0}, 'TP2':{'all':0, 'mean':0}},
+               'lesion_all': {'all':0, 'TP0':{'all':0}, 'TP1':{'all':0}, 'TP2':{'all':0}}}
+            dice_score_all = []
+            hausdorff_score_all = []
+            nsd_score_all = []
+            metrics = {
+                'dice': 0.0,
+                'hausdorff': 0.0,
+                'nsd': 0.0
+            }
+            for preprocessed in data_iterator:                    
                 data = preprocessed['data']
                 if isinstance(data, str):
                     delfile = data
@@ -217,11 +235,13 @@ class LesionLocatorSegmenter(object):
                     os.remove(delfile)
 
                 ofile = preprocessed['ofile']
+                print('OFILE: ', ofile)
                 print(f'\n === Predicting {os.path.basename(ofile)} === ')
-
+                patient_tp = os.path.basename(ofile)
+                timepoint = os.path.basename(ofile).split('_')[0]
+                output_folder = ofile.split('/')[0]
                 properties = preprocessed['data_properties']
                 prompt = preprocessed['prompt']
-
                 # let's not get into a runaway situation where the GPU predicts so fast that the disk has to b swamped with files
                 proceed = not check_workers_alive_and_busy(export_pool, worker_list, r, allowed_num_queued=2)
                 while not proceed:
@@ -234,25 +254,82 @@ class LesionLocatorSegmenter(object):
                     for inst_id, p in enumerate(prompt):
                         inst_id += 1
                         print(f'\n Lesion ID {inst_id}: ')
+                        p_sparse = p
+                        print('P_SPARSE :', p_sparse)
                         p = sparse_to_dense_prompt(p, prompt_type, array=data)
                         if p is None:
                             print(f" Invalid prompt found for {os.path.basename(ofile)}")
                             continue
-                        
+                        for k in error_all.keys():
+                            if k == 'lesion_all' or k == 'lesion_found':
+                                print('passing')
+                                continue
+                            if os.path.basename(ofile) not in error_all[k].keys():
+                                error_all[k][patient_tp]={'mean':0, 'per_lesion':[]}
+                        print('START PREDICTION')
                         # Predict the logits using the preprocessed data and the prompt
                         prediction = self.predict_logits_from_preprocessed_data(data, p).cpu()
-
+                        seg = torch.softmax(prediction, 0).argmax(0)
+                        pred = seg.detach().cpu().numpy().astype(np.uint8)
+                        print('PREDICTION SHAPE: ', pred.shape)
+                        print('GT SHAPE: ', p[0].detach().cpu().numpy().shape)
+                        dice_score = compute_dice_coefficient(p[0].detach().cpu().numpy().astype(np.uint8), pred)
+                        error_all['lesion_all']['all']+=1
+                        error_all['lesion_all'][timepoint]['all']+=1
+                        if dice_score >= 0.1:
+                            error_all['lesion_found']['all']+=1
+                            error_all['lesion_found'][timepoint]['all']+=1
+                        print('DICE SCORE: ', dice_score)
+                        surface_distances = compute_surface_distances(p[0].detach().cpu().numpy().astype(np.uint8), pred, spacing_mm)
+                        dice_score_all.append(dice_score)
+                        hausdorff_score = compute_robust_hausdorff(surface_distances, 95)
+                        hausdorff_score_all.append(hausdorff_score)
+                        nsd_score = compute_surface_dice_at_tolerance(surface_distances, 2)
+                        nsd_score_all.append(nsd_score)
+                        metrics = {
+                            'dice': dice_score,
+                            'hausdorff': hausdorff_score,
+                            'nsd': nsd_score
+                        }
+                        # Update all metrics in a loop
+                        for metric_name, score in metrics.items():
+                            error_all[metric_name][timepoint]['all'].append(score)
+                            error_all[metric_name][patient_tp]['per_lesion'].append(score)
+                        print('Avg Mean Dice: ', np.mean(dice_score_all))
+                        print('Avg Mean Hausdorff: ',  np.mean(hausdorff_score_all))
+                        print('Avg Mean NSD: ', np.mean(nsd_score_all))
+                        print('Avg Lesion Detection Score: {:.2f}%'.format((error_all['lesion_found']['all'] / error_all['lesion_all']['all']) * 100))
+                        with open(os.path.join(output_folder_or_file, 'error_dict.json'), 'w') as fjson:
+                            json.dump(error_all, fjson)
+                        print('----------')
+                        out_file = ofile + f'_lesion_{inst_id}'
                         # Visualize the prediction
                         if self.visualize:
-                            seg = torch.softmax(prediction, 0).argmax(0)
-                            import napari
-                            viewer = napari.Viewer()
-                            viewer.add_image(data[0].detach().cpu().numpy(), name='ct')
-                            viewer.add_labels(seg, name='pred')
-                            viewer.add_labels(p[0].detach().cpu().numpy().astype(np.uint8), name='prompt')
-                            napari.run()
+                            mask_ones_gt_axial = np.where(p[0].detach().cpu().numpy().astype(np.uint8) == 1)
+                            if len(mask_ones_gt_axial[0]) > 0:  # Check if mask is not empty
+                                # Find the z-slice with most mask voxels
+                                largest_mask_slice_id_axial = np.bincount(mask_ones_gt_axial[0]).argmax()
+                            fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
+                            # orginal img
+                            ax1.imshow(data[0][largest_mask_slice_id_axial, :, :].detach().cpu().numpy(), cmap='gray')
+                            ax1.set_title('Image') 
+                            ax1.axis('off')
+                            # gt
+                            ax2.imshow(data[0][largest_mask_slice_id_axial, :, :].detach().cpu().numpy(), cmap='gray')
+                            ax2.imshow(p[0][largest_mask_slice_id_axial, :, :].detach().cpu().numpy().astype(np.uint8), alpha=0.5)
+                            ax2.set_title('Ground truth') 
+                            ax2.axis('off')
+                            # preds
+                            ax3.imshow(data[0][largest_mask_slice_id_axial, :, :].detach().cpu().numpy(), cmap='gray')
+                            ax3.imshow(pred[largest_mask_slice_id_axial, :, :], alpha=0.5)
+                            ax3.set_title('Prediction') 
+                            ax3.axis('off')
 
-                        out_file = ofile + f'_lesion_{inst_id}'
+                            fig.subplots_adjust(left=0, right=1, bottom=0, top=1, wspace=0, hspace=0)
+                            plt.savefig(os.path.join(output_folder_or_file, f'{out_file}_dice_{dice_score:.2f}.png'), bbox_inches='tight')
+                            plt.close()
+
+                        
                         r.append(
                             export_pool.starmap_async(
                                 export_prediction_from_logits,
@@ -264,9 +341,21 @@ class LesionLocatorSegmenter(object):
                         # no multiprocessing
                         # export_prediction_from_logits(prediction, properties, self.configuration_manager, self.plans_manager,
                         #     self.dataset_json, out_file, False)
-
-                
+                    for metric_name in metrics.keys():
+                        error_all[metric_name][patient_tp]['mean'] = np.mean(error_all[metric_name][patient_tp]['per_lesion'])
                 print(f'done with {os.path.basename(ofile)}')
+            error_all['dice']['mean']= np.mean(dice_score_all)
+            error_all['hausdorff']['mean'] = np.mean(hausdorff_score_all)
+            error_all['nsd']['mean'] = np.mean(nsd_score_all)
+            error_all['lesion_found']['mean'] = (error_all['lesion_found']['all']/error_all['lesion_all']['all'])*100
+            for tp in ['TP0','TP1','TP2']:
+                error_all['dice'][tp]['mean']=np.mean(error_all['dice'][tp]['all'])
+                error_all['hausdorff'][tp]['mean']=np.mean(error_all['hausdorff'][tp]['all'])
+                error_all['nsd'][tp]['mean']=np.mean(error_all['nsd'][tp]['all'])
+                error_all['lesion_found'][tp]['mean'] = (error_all['lesion_found'][tp]['all']/error_all['lesion_all'][tp]['all'])*100
+            with open(os.path.join(output_folder_or_file, 'error_dict.json'), 'w') as fjson:
+                json.dump(error_all, fjson)
+            
             ret = [i.get()[0] for i in r]
 
         if isinstance(data_iterator, MultiThreadedAugmenter):
@@ -299,7 +388,7 @@ class LesionLocatorSegmenter(object):
                 self.network.load_state_dict(params)
             else:
                 self.network._orig_mod.load_state_dict(params)
-
+        
             # why not leave prediction on device if perform_everything_on_device? Because this may cause the
             # second iteration to crash due to OOM. Grabbing that with try except cause way more bloated code than
             # this actually saves computation time
@@ -467,6 +556,7 @@ class LesionLocatorSegmenter(object):
     def predict_sliding_window_return_logits(self, input_image: torch.Tensor, dense_prompt: torch.Tensor) \
             -> Union[np.ndarray, torch.Tensor]:
         assert isinstance(input_image, torch.Tensor)
+       
         self.network = self.network.to(self.device)
         self.network.eval()
 
@@ -563,6 +653,7 @@ def predict_seg_from_prompt():
                         help='Set this flag to visualize the prediction. This will open a napari viewer. You may need to '
                         ' run python -m pip install "napari[all]" first to use this feature.')
 
+    parser.add_argument('--modality', type=str, required=True, choices=['ct', 'pet'], default='ct', help="Use this to set the modality")
     print(
         "\n#######################################################################\nPlease cite the following paper "
         "when using LesionLocator:\n"
@@ -574,6 +665,8 @@ def predict_seg_from_prompt():
     args.f = [i if i == 'all' else int(i) for i in args.f]
 
     if not isdir(args.o):
+        
+        print(args.o)
         maybe_mkdir_p(args.o)
 
     assert args.device in ['cpu', 'cuda',
@@ -602,7 +695,7 @@ def predict_seg_from_prompt():
                                 visualize=args.visualize)
     optimized_ckpt = "bbox_optimized" if args.t == 'box' else "point_optimized"
     checkpoint_folder = join(args.m, 'LesionLocatorSeg', optimized_ckpt)
-    predictor.initialize_from_trained_model_folder(checkpoint_folder, args.f, "checkpoint_final.pth")
+    predictor.initialize_from_trained_model_folder(checkpoint_folder, args.f, args.modality, "checkpoint_final.pth")
     predictor.predict_from_files(args.i, args.o, args.p, args.t,
                                  overwrite=not args.continue_prediction,
                                  num_processes_preprocessing=args.npp,

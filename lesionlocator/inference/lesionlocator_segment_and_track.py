@@ -156,8 +156,9 @@ class LesionLocatorSegmenter(object):
 
         configuration_manager_tracker = plans_manager_tracker.get_configuration(configuration_name_tracker)
         # set spacing
-        configuration_manager_tracker.set_spacing([1., 1., 1.])
-        # restore network
+        configuration_manager.set_spacing([1.5, 1.5, 1.5])
+        configuration_manager_tracker.set_spacing([1.5, 1.5, 1.5])
+        # restore networks
         num_input_channels = determine_num_input_channels(plans_manager, configuration_manager_tracker, dataset_json_tracker)
         trainer_class = recursive_find_python_class(join(lesionlocator.__path__[0], "training", "LesionLocatorTrainer"),
                                                     trainer_name_tracker, 'lesionlocator.training.LesionLocatorTrainer')
@@ -280,7 +281,6 @@ class LesionLocatorSegmenter(object):
         with multiprocessing.get_context("spawn").Pool(num_processes_segmentation_export) as export_pool:
             worker_list = [i for i in export_pool._pool]
             r = []
-            spacing_mm=(1.5, 1.5, 1.5)
             error_all={'dice': {'mean':0, 'TP0':{'all':[], 'mean':0}, 'TP1': {'all':[], 'mean':0}, 'TP2': {'all':[], 'mean':0}}, 
                'nsd': {'mean':0, 'TP0':{'all':[], 'mean':0}, 'TP1': {'all':[], 'mean':0}, 'TP2': {'all':[], 'mean':0}},
                'hausdorff': {'mean':0, 'TP0':{'all':[], 'mean':0}, 'TP1': {'all':[], 'mean':0}, 'TP2': {'all':[], 'mean':0}},
@@ -296,6 +296,8 @@ class LesionLocatorSegmenter(object):
             }
             for preprocessed in data_iterator:
                 data = preprocessed['data']
+                print('DATA SHAPE, ', data.shape)
+                print('DATA MIN, ', data.min().item(), 'DATA MAX: ', data.max().item())
                 #baseline data, None for TP0 scans
                 bl_data = preprocessed['bl_data']
                 if isinstance(data, str):
@@ -770,7 +772,7 @@ class LesionLocatorSegmenter(object):
                         break
                     workon, sl = item
                     prediction = self._internal_maybe_mirror_and_predict(workon)[0].to(results_device)
-
+                    
                     if self.use_gaussian:
                         prediction *= gaussian
                     predicted_logits[sl] += prediction
