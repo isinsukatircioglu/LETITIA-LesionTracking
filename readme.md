@@ -157,7 +157,7 @@ runai submit --name track -i registry.rcp.epfl.ch/letitia/my-pytorch:v1 --gpu 0.
 
 ## 📚 Citation
 
-If you find our work useful, please consider citing:
+If you use this code, please cite the original paper:
 
 ```bibtex
 @InProceedings{Rokuss_2025_CVPR,
