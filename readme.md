@@ -132,7 +132,19 @@ To run inference with LesionLocator, you need to download the pretrained model c
 Once downloaded, extract the contents and use the `-m` argument in the CLI tools to point to the directory named `LesionLocatorCheckpoint`. Let us know if you run into issues downloading or loading checkpoints!
 
 ---
-## Inference on RunAI for USZ Melanoma Dataset
+## Finetune the LesionLocator Segmentation Model on the USZ Melanoma Dataset
+
+To finetune the entire LesionLocator segmentation model, you need to run:
+
+```bash
+LesionLocator_train_segment -i /scratch/nnUNet_raw/Dataset800_USZMelanoma/imagesTr -iv /scratch/nnUNet_raw/Dataset801_USZMelanoma/imagesTr -p /scratch/nnUNet_raw/Dataset800_USZMelanoma/labelsTr -pv /scratch/nnUNet_raw/Dataset801_USZMelanoma/labelsTr -m /scratch/LesionLocatorckpt/LesionLocatorCheckpoint -o /home/katircio/code/LETITIA-LesionTracking/TrainSeg800_FT --ckpt_path  /scratch/LesionLocatorckpt/LesionLocatorFT -t "point" -npp 3 -nps 3 --visualize --modality "ct"
+```
+To finetune encoder or decoder part of the LesionLocator segmentation model, you need to run:
+```bash
+LesionLocator_train_segment -i /scratch/nnUNet_raw/Dataset800_USZMelanoma/imagesTr -iv /scratch/nnUNet_raw/Dataset801_USZMelanoma/imagesTr -p /scratch/nnUNet_raw/Dataset800_USZMelanoma/labelsTr -pv /scratch/nnUNet_raw/Dataset801_USZMelanoma/labelsTr -m /scratch/LesionLocatorckpt/LesionLocatorCheckpoint -o /home/katircio/code/LETITIA-LesionTracking/TrainSeg800_FTDec --ckpt_path  /scratch/LesionLocatorckpt/LesionLocatorFTDec -t "point" -npp 3 -nps 3 --visualize --modality "ct" --finetune decoder
+```
+---
+## Inference on RunAI for the USZ Melanoma Dataset
 ```bash
 runai submit --name seg -i registry.rcp.epfl.ch/letitia/my-pytorch:v1 --gpu 0.5 --memory 60G --memory-limit 75G --large-shm  --pvc letitia-scratch:/scratch --pvc home:/home/katircio --command -- /bin/bash -ic 'set -ex; echo "Starting job"; conda activate lesionlocator ;cd /home/katircio/code/LesionLocator/ ; LesionLocator_track -i /scratch/nnUNet_raw/Dataset801_USZMelanoma/imagesTr -p /scratch/nnUNet_raw/Dataset801_USZMelanoma/labelsTr -m /scratch/LesionLocatorckpt/LesionLocatorCheckpoint -o /home/katircio/code/LesionLocator/LesionSegUSZ801 -t "point" -npp 1 -nps 1 --visualize --modality "ct"'
 ```
