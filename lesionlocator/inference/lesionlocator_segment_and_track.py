@@ -296,8 +296,6 @@ class LesionLocatorSegmenter(object):
             }
             for preprocessed in data_iterator:
                 data = preprocessed['data']
-                print('DATA SHAPE, ', data.shape)
-                print('DATA MIN, ', data.min().item(), 'DATA MAX: ', data.max().item())
                 #baseline data, None for TP0 scans
                 bl_data = preprocessed['bl_data']
                 if isinstance(data, str):
@@ -367,14 +365,13 @@ class LesionLocatorSegmenter(object):
                             print('Reading segmentation mask with spacing: ', original_spacing, ', target spacing is: ', self.target_spacing)
                             # Convert to numpy and compute new shape
                             prev_seg_np = SimpleITK.GetArrayFromImage(prev_seg_sitk)
-                            print('prev_seg_np shape: ', prev_seg_np.shape)
                             new_shape = compute_new_shape(prev_seg_np.shape, original_spacing, self.target_spacing)
                             bl_spacing = (prev_seg_np.shape[0]* original_spacing[0] /  bl_data.shape[1],
                                         prev_seg_np.shape[1] * original_spacing[1] /  bl_data.shape[2],
                                         prev_seg_np.shape[2] * original_spacing[2] /  bl_data.shape[3])
-                            print('BL SPACING: ', bl_spacing)
-                            print('New shape for resampling: ', new_shape)
-                            print('BL DATA SHAPE FOR RESAMPLING: ', bl_data.shape)
+                            #print('BL SPACING: ', bl_spacing)
+                            #print('New shape for resampling: ', new_shape)
+                            #print('BL DATA SHAPE FOR RESAMPLING: ', bl_data.shape)
                             prev_seg_resampled = self.configuration_manager.resampling_fn_seg(
                                 prev_seg_np[None], 
                                 bl_data.shape[1:], 
@@ -705,6 +702,7 @@ class LesionLocatorSegmenter(object):
     @torch.inference_mode()
     def _internal_maybe_mirror_and_predict(self, x: torch.Tensor) -> torch.Tensor:
         mirror_axes = self.allowed_mirroring_axes if self.use_mirroring else None
+        print('NETWORK INPUT SHAPE: ', x.shape)
         prediction = self.network(x)
 
         if mirror_axes is not None:

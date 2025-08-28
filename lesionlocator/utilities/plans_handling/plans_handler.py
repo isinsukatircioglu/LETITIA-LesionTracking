@@ -100,6 +100,9 @@ class ConfigurationManager(object):
     def set_spacing(self, spacing: List[float]):
         self.configuration['spacing'] = spacing
 
+    def set_preprocessor_name(self, preprocessor_name: str):
+        self.configuration['preprocessor_name'] = preprocessor_name
+
     @property
     def data_identifier(self) -> str:
         return self.configuration['data_identifier']

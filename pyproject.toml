@@ -54,7 +54,7 @@ repository = "https://github.com/MIC-DKFZ/LesionLocator"
 LesionLocator_segment = "lesionlocator.inference.lesionlocator_segment:predict_seg_from_prompt"
 LesionLocator_track = "lesionlocator.inference.lesionlocator_segment_and_track:segment_and_track"
 LesionLocator_create_prompt_json = "lesionlocator.utilities.prompt_handling.create_prompt_jsons_from_seg:prompt_jsons"
-
+LesionLocator_train_segment = "lesionlocator.training.train_segment:train_from_prompt"
 
 [project.optional-dependencies]
 dev = [

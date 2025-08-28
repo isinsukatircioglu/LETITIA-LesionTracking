@@ -108,6 +108,7 @@ class DefaultPreprocessor(object):
             seg = seg.astype(np.int16)
         else:
             seg = seg.astype(np.int8)
+        print('Data shape:', data.shape, 'Segmentation shape:', seg.shape,)
         return data, seg, properties
 
     def all_exist(self, files):
