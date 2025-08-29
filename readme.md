@@ -35,13 +35,13 @@ pip install -e .
 
 ---
 
-## 🚀 Features & Usage
+## Inference
 
 LETITIA LesionLocator has **two main modes**:
 
 ### 1️⃣ Zero-Shot Lesion Segmentation (Single Timepoint)
 
-Perform lesion segmentation using **point** or **3D bounding box** prompts. No lesion type–specific fine-tuning required.
+Perform lesion segmentation using **point** or **3D bounding box** prompts.
 
 #### Usage
 
@@ -132,7 +132,36 @@ To run inference with LesionLocator, you need to download the pretrained model c
 Once downloaded, extract the contents and use the `-m` argument in the CLI tools to point to the directory named `LesionLocatorCheckpoint`. Let us know if you run into issues downloading or loading checkpoints!
 
 ---
+## Inference on RunAI for the USZ Melanoma Dataset
+```bash
+runai submit --name seg -i registry.rcp.epfl.ch/letitia/my-pytorch:v1 --gpu 0.5 --memory 60G --memory-limit 75G --large-shm  --pvc letitia-scratch:/scratch --pvc home:/home/katircio --command -- /bin/bash -ic 'set -ex; echo "Starting job"; conda activate lesionlocator ;cd /home/katircio/code/LesionLocator/ ; LesionLocator_track -i /scratch/nnUNet_raw/Dataset801_USZMelanoma/imagesTr -p /scratch/nnUNet_raw/Dataset801_USZMelanoma/labelsTr -m /scratch/LesionLocatorckpt/LesionLocatorCheckpoint -o /home/katircio/code/LesionLocator/LesionSegUSZ801 -t "point" -npp 1 -nps 1 --visualize --modality "ct"'
+```
+
+```bash
+runai submit --name track -i registry.rcp.epfl.ch/letitia/my-pytorch:v1 --gpu 0.5 --memory 60G --memory-limit 75G --large-shm  --pvc letitia-scratch:/scratch --pvc home:/home/katircio --command -- /bin/bash -ic 'set -ex; echo "Starting job"; conda activate lesionlocator ;cd /home/katircio/code/LesionLocator/ ; LesionLocator_track -i /scratch/nnUNet_raw/Dataset801_USZMelanoma/imagesTr -p /scratch/nnUNet_raw/Dataset801_USZMelanoma/labelsTr -m /scratch/LesionLocatorckpt/LesionLocatorCheckpoint -o /home/katircio/code/LesionLocator/LesionTrackUSZ801 -t "point" -npp 1 -nps 1 --visualize --modality "ct" --track --adaptive_mode'
+```
+---
 ## Finetune the LesionLocator Segmentation Model on the USZ Melanoma Dataset
+
+#### Arguments
+| Argument | Description |
+|----------|-------------|
+| `-i` | **Training image(s)**: Path to a folder containing training images. |
+| `-iv` | **Test image(s)**: Path to a folder containing test images. |
+| `-p` | **Training Prompt(s)**: Can be `.nii.gz` instance segmentation maps. Prompts must have the same filename as their corresponding input image. Binary masks will be automatically converted to instance maps.
+| `-pv` | **Test Prompt(s)**: Can be `.nii.gz` instance segmentation maps. Prompts must have the same filename as their corresponding input image. Binary masks will be automatically converted to instance maps.
+| `-t` | **Prompt type**: Choose between `point` or `box`. Determines how the model interprets the prompts. Default is `box`. |
+| `-o` | **Output folder**: Path where the predicted segmentation masks will be saved. Created automatically if it doesn't exist. |
+| `-m` | **Model folder**: Path to the downloaded `LesionLocatorCheckpoint` directory containing trained model weights. |
+| `-f` | **Model folds**: Specify one or more folds. Defaults to all 5 folds for ensemble prediction. |
+| `--disable_tta` | Disables test-time augmentation (TTA) using mirroring. Speeds up inference at the cost of accuracy. |
+| `--continue_prediction`, `--c` | Continues a previously interrupted run by skipping existing output files. |
+| `--visualize` | Saves axial and coronal views of the predicted and ground truth masks.|
+| `--ckpt_path` | Path to save inference-compatible checkpoints.|
+| `--finetune` | Part of the model to finetune. Options: encoder, decoder, all.|
+| `--epochs` | Number of training epochs.|
+| `--batch_size` | Batch size for training.|
+| `--lr` | Learning rate for training.|
 
 To finetune the entire LesionLocator segmentation model, you need to run:
 
@@ -142,15 +171,6 @@ LesionLocator_train_segment -i /scratch/nnUNet_raw/Dataset800_USZMelanoma/images
 To finetune encoder or decoder part of the LesionLocator segmentation model, you need to run:
 ```bash
 LesionLocator_train_segment -i /scratch/nnUNet_raw/Dataset800_USZMelanoma/imagesTr -iv /scratch/nnUNet_raw/Dataset801_USZMelanoma/imagesTr -p /scratch/nnUNet_raw/Dataset800_USZMelanoma/labelsTr -pv /scratch/nnUNet_raw/Dataset801_USZMelanoma/labelsTr -m /scratch/LesionLocatorckpt/LesionLocatorCheckpoint -o /home/katircio/code/LETITIA-LesionTracking/TrainSeg800_FTDec --ckpt_path  /scratch/LesionLocatorckpt/LesionLocatorFTDec -t "point" -npp 3 -nps 3 --visualize --modality "ct" --finetune decoder
-```
----
-## Inference on RunAI for the USZ Melanoma Dataset
-```bash
-runai submit --name seg -i registry.rcp.epfl.ch/letitia/my-pytorch:v1 --gpu 0.5 --memory 60G --memory-limit 75G --large-shm  --pvc letitia-scratch:/scratch --pvc home:/home/katircio --command -- /bin/bash -ic 'set -ex; echo "Starting job"; conda activate lesionlocator ;cd /home/katircio/code/LesionLocator/ ; LesionLocator_track -i /scratch/nnUNet_raw/Dataset801_USZMelanoma/imagesTr -p /scratch/nnUNet_raw/Dataset801_USZMelanoma/labelsTr -m /scratch/LesionLocatorckpt/LesionLocatorCheckpoint -o /home/katircio/code/LesionLocator/LesionSegUSZ801 -t "point" -npp 1 -nps 1 --visualize --modality "ct"'
-```
-
-```bash
-runai submit --name track -i registry.rcp.epfl.ch/letitia/my-pytorch:v1 --gpu 0.5 --memory 60G --memory-limit 75G --large-shm  --pvc letitia-scratch:/scratch --pvc home:/home/katircio --command -- /bin/bash -ic 'set -ex; echo "Starting job"; conda activate lesionlocator ;cd /home/katircio/code/LesionLocator/ ; LesionLocator_track -i /scratch/nnUNet_raw/Dataset801_USZMelanoma/imagesTr -p /scratch/nnUNet_raw/Dataset801_USZMelanoma/labelsTr -m /scratch/LesionLocatorckpt/LesionLocatorCheckpoint -o /home/katircio/code/LesionLocator/LesionTrackUSZ801 -t "point" -npp 1 -nps 1 --visualize --modality "ct" --track --adaptive_mode'
 ```
 ---
 
