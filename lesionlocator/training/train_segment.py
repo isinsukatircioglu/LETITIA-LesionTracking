@@ -1586,14 +1586,15 @@ class LesionLocatorSegmenter(object):
                                 dice_score = compute_dice_coefficient(target_cropped, pred_cropped)
                                 epoch_test_dice_scores.append(dice_score)
                                 
-                                # Visualize test samples (first few batches only)
-                                if batch_idx < 1 and output_folder:
-                                    test_viz_folder = os.path.join(output_folder, f'fold_{fold_idx}', 'test_visualizations')
-                                    self._visualize_validation_sample(
-                                        data_single, target_cropped, pred_cropped,
-                                        f'{filename}_fold_{fold_idx}_epoch_{epoch}_batch_{batch_idx}_sample_{i}',
-                                        test_viz_folder, epoch
-                                    )
+                                if self.visualize:
+                                    # Visualize test samples (first few batches only)
+                                    if batch_idx < 1 and output_folder:
+                                        test_viz_folder = os.path.join(output_folder, f'fold_{fold_idx}', 'test_visualizations')
+                                        self._visualize_validation_sample(
+                                            data_single, target_cropped, pred_cropped,
+                                            f'{filename}_fold_{fold_idx}_epoch_{epoch}_batch_{batch_idx}_sample_{i}',
+                                            test_viz_folder, epoch
+                                        )
                             
                         except Exception as e:
                             print(f"Error in test batch {batch_idx}: {e}")
