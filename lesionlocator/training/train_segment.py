@@ -2000,7 +2000,7 @@ def train_from_prompt():
     parser.add_argument('--lr', type=float, required=False, default=1e-4,
                         help='Learning rate for training. Default: 1e-4')
     parser.add_argument('--batch_size', type=int, required=False, default=3,
-                        help='Batch size for training. Default: 3 (supports batching with fixed patch sizes from TrainingPreprocessor)')
+                        help='Batch size for training. Default: 3')
     parser.add_argument('--num_workers', type=int, required=False, default=4,
                         help='Number of workers for data loading. Default: 4')
     parser.add_argument('--ckpt_path', type=str, required=False, default=None,

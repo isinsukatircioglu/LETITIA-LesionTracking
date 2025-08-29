@@ -92,7 +92,9 @@ class LesionLocatorSegmenter(object):
         parameters = []
         for i, f in enumerate(use_folds):
             f = int(f) if f != 'all' else f
-            checkpoint = torch.load(join(model_training_output_dir, f'fold_{f}', checkpoint_name),
+            ckpt_path = join(model_training_output_dir, f'fold_{f}', checkpoint_name)
+            print(f"Loading segmentation model checkpoint from: {ckpt_path}")
+            checkpoint = torch.load(ckpt_path,
                                     map_location=torch.device('cpu'), weights_only=False)
             if i == 0:
                 trainer_name = checkpoint['trainer_name']
@@ -142,9 +144,10 @@ class LesionLocatorSegmenter(object):
 
         parameters_tracker = []
         for i, f in enumerate(use_folds):
-            print(f'Loading fold {f}')
             f = int(f) if f != 'all' else f
-            checkpoint_tracker = torch.load(join(model_track_training_output_dir, f'fold_{f}', "checkpoint_final.pth"),
+            ckpt_path_tracker = join(model_track_training_output_dir, f'fold_{f}', "checkpoint_final.pth")
+            print(f"Loading tracker model checkpoint from: {ckpt_path_tracker}")
+            checkpoint_tracker = torch.load(ckpt_path_tracker,
                                     map_location=torch.device('cpu'), weights_only=False)
             if i == 0:
                 trainer_name_tracker = checkpoint_tracker['trainer_name']
